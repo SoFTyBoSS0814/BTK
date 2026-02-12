@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8">
+  <title>BTK Kalkulátor</title>
+  <style>
+    body {
+      background-color: #1e1e1e;
+      color: #f0f0f0;
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    h1 {
+      color: #fff;
+    }
+    input, button {
+      padding: 8px;
+      margin-top: 5px;
+      font-size: 16px;
+    }
+    input[type="text"] {
+      width: 400px;
+    }
+    input[type="range"] {
+      width: 300px;
+    }
+    #result {
+      margin-top: 20px;
+      padding: 15px;
+      background: #2a2a2a;
+      border-radius: 10px;
+      font-size: 18px;
+    }
+    #lista {
+      margin-top: 40px;
+      padding: 15px;
+      background: #111;
+      border-radius: 10px;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 10px;
+    }
+    th, td {
+      border: 1px solid #444;
+      padding: 6px;
+      text-align: left;
+    }
+    th {
+      background: #333;
+    }
+  </style>
+</head>
+<body>
+  <h1>⚖️ BTK Kalkulátor</h1>
+ 
+  <label for="codeInput">Rövidítések (vesszővel elválasztva):</label><br>
+  <input type="text" id="codeInput" placeholder="pl. GYH, VL, KBO"><br>
+ 
+  <label for="slider">Enyhítés (%): <span id="sliderValue">0</span>%</label><br>
+  <input type="range" id="slider" min="0" max="100" value="0">
+ 
+  <br><br>
+  <button onclick="calculate()">Számol</button>
+ 
+  <div id="result">Itt lesz az eredmény...</div>
+ 
+  <div id="lista">
+    <h2>📜 Teljes Rövidítés Lista</h2>
+    <table id="adatTabla">
+      <tr>
+        <th>Rövidítés</th>
+        <th>Paragrafus megnevezése</th>
+        <th>Pénzbírság (Ft)</th>
+        <th>Börtön (Nap/Perc)</th>
+      </tr>
+    </table>
+  </div>
+ 
+  <script>
+    const MAX_FT = 50000000;
+    const MAX_PERC = 180;
+ 
+    const slider = document.getElementById("slider");
+    const sliderValue = document.getElementById("sliderValue");
+    slider.addEventListener("input", () => {
+      sliderValue.textContent = slider.value;
+    });
+ 
+    // 🔹 Itt van az összes adat (rövidítés -> Ft, börtön perc/nap, név)
+    const adat = {
+      "EÜH": {nev:"Elsősegély Csomag Hiánya", ft:350000, perc:0},
+      "EH": {nev:"Elakadásjelző Háromszög Hiánya", ft:350000, perc:0},
+      "FEH": {nev:"Forgalmi Engedély Hiánya", ft:1500000, perc:0},
+      "VEH": {nev:"Vadász Engedély Hiánya", ft:5500000, perc:0},
+      "IAGSZ": {nev:"Illegális Alkatrész Szerelés", ft:1500000, perc:0},
+      "EAEH": {nev:"Elsőbbségadás Elmulasztása", ft:1500000, perc:0},
+      "SP": {nev:"Szabálytalan Parkolás", ft:750000, perc:0},
+      "GYH": {nev:"Gyorshajtás", ft:550000, perc:0},
+      "TJVÁ": {nev:"Tilos Jelzésen Áthaladás", ft:300000, perc:0},
+      "JNV": {nev:"Jogosítvány Nélküli Vezetés", ft:1000000, perc:0},
+      "RMA": {nev:"Rendőri Munka Akadályozása", ft:1000000, perc:0},
+      "VL": {nev:"Vandalizmus", ft:500000, perc:0},
+      "KBEB": {nev:"Közlekedés Biztonsága Elleni Bűncselekmény", ft:500000, perc:0},
+      "IOK": {nev:"Illegális Okmányok Kiállítása", ft:2000000, perc:0},
+      "IFEK": {nev:"Illegális Forgalmi Engedély Kiállítása", ft:10000000, perc:0},
+      "RJVK": {nev:"Rongált Járművel Való Közlekedés", ft:750000, perc:0},
+      "RH": {nev:"Rendszámtábla Hiánya", ft:3500000, perc:25},
+ 
+      "GR": {nev:"Garázdaság", ft:850000, perc:15},
+      "HF": {nev:"Hatóság Félrevezetése", ft:1000000, perc:20},
+      "RUM": {nev:"Rendőri Utasítás Megszegése", ft:1000000, perc:25},
+      "HSZEE": {nev:"Hivatali Személy Elleni Erőszak", ft:5500000, perc:60},
+      "EAJ": {nev:"Eltiltás Alatti Járművezetés", ft:2000000, perc:0},
+      "LPK": {nev:"Lopás Kis Értékű", ft:1000000, perc:15},
+      "LPN": {nev:"Lopás Nagy Értékű", ft:1200000, perc:20},
+      "JL": {nev:"Jármű Lopás", ft:3000000, perc:25},
+      "MLS": {nev:"Magánlaksértés", ft:800000, perc:20},
+      "TSK": {nev:"Testi Sértés Könnyű", ft:1000000, perc:15},
+      "TSF": {nev:"Testi Sértés Fokozott", ft:2200000, perc:25},
+      "TSS": {nev:"Testi Sértés Súlyos", ft:3300000, perc:30},
+      "ZK": {nev:"Zaklatás", ft:1000000, perc:20},
+      "RG": {nev:"Rágalmazás", ft:800000, perc:0},
+      "HT": {nev:"Hamis Tanúzás", ft:1000000, perc:45},
+      "HEM": {nev:"Hatósági Eljárás Megzavarása", ft:1000000, perc:0},
+      "GV": {nev:"Gondatlan Vezetés", ft:1500000, perc:0},
+ 
+      "KV": {nev:"Közúti Veszélyeztetés", ft:1200000, perc:0},
+      "JIÁ": {nev:"Járművezetés Ittasan", ft:1000000, perc:20},
+      "JBÁ": {nev:"Járművezetés Bódultan", ft:1500000, perc:20},
+      "SE": {nev:"Segítségnyújtás Elmulasztása", ft:1000000, perc:15},
+      "CSRBH": {nev:"Cserbenhagyás", ft:3000000, perc:15},
+      "KBO": {nev:"Közúti Baleset Okozása", ft:2000000, perc:0},
+      "REM": {nev:"Rendőrség Előli Menekülés", ft:5500000, perc:25},
+      "IMB": {nev:"Illegális Maroklőfegyver", ft:3000000, perc:15},
+      "INLB": {nev:"Illegális Nagykaliberű Lőfegyver", ft:7000000, perc:30},
+      "ILB": {nev:"Illegális Lőszer Birtoklás", ft:750000, perc:10},
+      "IAB": {nev:"Illegális Alkatrész Birtoklás", ft:500000, perc:10},
+      "KBK": {nev:"Kábítószer Kis Mennyiség", ft:750000, perc:10},
+      "KBN": {nev:"Kábítószer Nagy Mennyiség", ft:1300000, perc:15},
+      "KBT": {nev:"Kábítószer Terjesztés", ft:2000000, perc:30},
+      "FÁ": {nev:"Fegyver Árusítás", ft:3500000, perc:30},
+      "LÁ": {nev:"Lőszer Árusítás", ft:1200000, perc:30},
+      "IAÁ": {nev:"Illegális Alkatrész Árusítás", ft:1200000, perc:15},
+      "KÁ": {nev:"Kábítószer Árusítás", ft:2000000, perc:20},
+      "KT": {nev:"Kábítószer Termesztés", ft:3000000, perc:50},
+      "ATMR": {nev:"ATM Rablás", ft:5000000, perc:45},
+      "BOLTR": {nev:"Bolt Rablás", ft:5000000, perc:45},
+      "BANKR": {nev:"Bankrablás", ft:15500000, perc:100},
+      "ÉKSZBR": {nev:"Ékszerboltrablás", ft:15500000, perc:100},
+      "ERE": {nev:"Emberrablás Egyénileg", ft:4500000, perc:50},
+      "ECS": {nev:"Emberrablás Csoportosan", ft:5500000, perc:70},
+      "IHÁ": {nev:"Illegális Határátlépés", ft:850000, perc:0},
+      "HSZVK": {nev:"Hivatali Személynek Való Kiadás", ft:3500000, perc:15},
+      "HV": {nev:"Hivatali Visszaélés", ft:13000000, perc:30},
+      "OH": {nev:"Okirathamisítás", ft:3000000, perc:30},
+      "HSZM": {nev:"Hivatali Személy Megvesztegetése", ft:2000000, perc:30},
+      "CFSZ": {nev:"Fenyegetés Civil Személlyel", ft:2000000, perc:15},
+      "HFSZ": {nev:"Fenyegetés Hivatali Személlyel", ft:3000000, perc:25},
+      "EKCSZ": {nev:"Emberölési Kísérlet Civil", ft:4500000, perc:30},
+      "EKHSZ": {nev:"Emberölési Kísérlet Hivatali", ft:5500000, perc:60},
+      "KR": {nev:"Korrupció", ft:20000000, perc:180},
+      "PM": {nev:"Parancsmegtagadás", ft:4500000, perc:60},
+      "ÜL": {nev:"Üzemanyaglopás", ft:2500000, perc:10},
+      "PB": {nev:"Piszkospénz Birtoklás", ft:3500000, perc:15},
+      "HSZSZT": {nev:"Hiv. Személlyel Szembeni Tiszteletlenség", ft:2300000, perc:0},
+      "ISZVR": {nev:"Illegális Szervezetben Részvétel", ft:15000000, perc:999}, 
+      "GYCSZ": {nev:"Gyilkosság Civil", ft:5000000, perc:45},
+      "GYHSZ": {nev:"Gyilkosság Hivatali", ft:8500000, perc:100},
+      "PR": {nev:"Prostitúció", ft:1500000, perc:25},
+      "SZZ": {nev:"Szexuális Zaklatás", ft:2500000, perc:15},
+      "PRR": {nev:"Pénzraktár Rablás", ft:20000000, perc:180},
+      "BFB": {nev:"Bejelentetlen Lőfegyver Birtoklása", ft:3000000, perc:0},
+      "FSZ": {nev:"Fogolyszökés", ft:10000000, perc:120},
+      "FSZKT": {nev:"Fogolyszöktetés", ft:10000000, perc:120},
+    };
+ 
+    // Lista kirajzolása alul
+    const tabla = document.getElementById("adatTabla");
+    for (const key in adat) {
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${key}</td>
+        <td>${adat[key].nev}</td>
+        <td>${adat[key].ft.toLocaleString()} Ft</td>
+        <td>${adat[key].perc > 0 ? adat[key].perc+" nap/perc" : "-"}</td>
+      `;
+      tabla.appendChild(row);
+    }
+ 
+    // Számítás több kódra
+    function calculate() {
+      const input = document.getElementById("codeInput").value;
+      const resultDiv = document.getElementById("result");
+ 
+      if (!input) {
+        resultDiv.innerHTML = "❌ Kérlek, adj meg rövidítéseket!";
+        return;
+      }
+ 
+      const codes = input.split(",").map(c => c.trim().toUpperCase());
+      let totalFt = 0;
+      let totalPerc = 0;
+      let details = "";
+ 
+      codes.forEach(code => {
+        if (adat[code]) {
+          totalFt += adat[code].ft;
+          totalPerc += adat[code].perc;
+          details += `<br>➤ ${code}: ${adat[code].ft.toLocaleString()} Ft, ${adat[code].perc} perc`;
+        } else {
+          details += `<br>❌ ${code}: nincs adat`;
+        }
+      });
+ 
+      const enyhites = slider.value / 100;
+      let ftMod = totalFt * (1 - enyhites);
+      let percMod = totalPerc * (1 - enyhites);
+ 
+      if (ftMod > MAX_FT) ftMod = MAX_FT;
+      if (percMod > MAX_PERC) percMod = MAX_PERC;
+ 
+      resultDiv.innerHTML = `
+        <b>Eredeti összesen:</b> ${totalFt.toLocaleString()} Ft, ${totalPerc} perc
+        <br><b>Módosítva (${slider.value}% enyhítéssel):</b> ${ftMod.toLocaleString()} Ft, ${percMod} perc
+        <hr>
+        <b>Részletek:</b> ${details}
+      `;
+    }
+  </script>
+</body>
+ 
+</html>
