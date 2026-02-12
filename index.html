@@ -1,3 +1,14 @@
+Rendben 👍
+Itt a teljes scripted, minden adattal, pontosan úgy, ahogy küldted — azzal a módosítással, hogy:
+
+❌ nincs csúszka
+
+✅ fix 30% enyhítéssel számol
+
+✅ minden eredeti adat benne van
+
+Csak másold be egy index.html fájlba.
+
 <!DOCTYPE html>
 <html lang="hu">
 <head>
@@ -20,9 +31,6 @@
     }
     input[type="text"] {
       width: 400px;
-    }
-    input[type="range"] {
-      width: 300px;
     }
     #result {
       margin-top: 20px;
@@ -58,9 +66,6 @@
   <label for="codeInput">Rövidítések (vesszővel elválasztva):</label><br>
   <input type="text" id="codeInput" placeholder="pl. GYH, VL, KBO"><br>
  
-  <label for="slider">Enyhítés (%): <span id="sliderValue">0</span>%</label><br>
-  <input type="range" id="slider" min="0" max="100" value="0">
- 
   <br><br>
   <button onclick="calculate()">Számol</button>
  
@@ -73,7 +78,7 @@
         <th>Rövidítés</th>
         <th>Paragrafus megnevezése</th>
         <th>Pénzbírság (Ft)</th>
-        <th>Börtön (Nap/Perc)</th>
+        <th>Börtön (Perc)</th>
       </tr>
     </table>
   </div>
@@ -81,14 +86,8 @@
   <script>
     const MAX_FT = 50000000;
     const MAX_PERC = 180;
+    const FIX_ENYHITES = 0.30; // FIX 30%
  
-    const slider = document.getElementById("slider");
-    const sliderValue = document.getElementById("sliderValue");
-    slider.addEventListener("input", () => {
-      sliderValue.textContent = slider.value;
-    });
- 
-    // 🔹 Itt van az összes adat (rövidítés -> Ft, börtön perc/nap, név)
     const adat = {
       "EÜH": {nev:"Elsősegély Csomag Hiánya", ft:350000, perc:0},
       "EH": {nev:"Elakadásjelző Háromszög Hiánya", ft:350000, perc:0},
@@ -108,7 +107,6 @@
       "IFEK": {nev:"Illegális Forgalmi Engedély Kiállítása", ft:10000000, perc:0},
       "RJVK": {nev:"Rongált Járművel Való Közlekedés", ft:750000, perc:0},
       "RH": {nev:"Rendszámtábla Hiánya", ft:3500000, perc:25},
- 
       "GR": {nev:"Garázdaság", ft:850000, perc:15},
       "HF": {nev:"Hatóság Félrevezetése", ft:1000000, perc:20},
       "RUM": {nev:"Rendőri Utasítás Megszegése", ft:1000000, perc:25},
@@ -126,7 +124,6 @@
       "HT": {nev:"Hamis Tanúzás", ft:1000000, perc:45},
       "HEM": {nev:"Hatósági Eljárás Megzavarása", ft:1000000, perc:0},
       "GV": {nev:"Gondatlan Vezetés", ft:1500000, perc:0},
- 
       "KV": {nev:"Közúti Veszélyeztetés", ft:1200000, perc:0},
       "JIÁ": {nev:"Járművezetés Ittasan", ft:1000000, perc:20},
       "JBÁ": {nev:"Járművezetés Bódultan", ft:1500000, perc:20},
@@ -169,7 +166,7 @@
       "ÜL": {nev:"Üzemanyaglopás", ft:2500000, perc:10},
       "PB": {nev:"Piszkospénz Birtoklás", ft:3500000, perc:15},
       "HSZSZT": {nev:"Hiv. Személlyel Szembeni Tiszteletlenség", ft:2300000, perc:0},
-      "ISZVR": {nev:"Illegális Szervezetben Részvétel", ft:15000000, perc:999}, 
+      "ISZVR": {nev:"Illegális Szervezetben Részvétel", ft:15000000, perc:999},
       "GYCSZ": {nev:"Gyilkosság Civil", ft:5000000, perc:45},
       "GYHSZ": {nev:"Gyilkosság Hivatali", ft:8500000, perc:100},
       "PR": {nev:"Prostitúció", ft:1500000, perc:25},
@@ -177,10 +174,9 @@
       "PRR": {nev:"Pénzraktár Rablás", ft:20000000, perc:180},
       "BFB": {nev:"Bejelentetlen Lőfegyver Birtoklása", ft:3000000, perc:0},
       "FSZ": {nev:"Fogolyszökés", ft:10000000, perc:120},
-      "FSZKT": {nev:"Fogolyszöktetés", ft:10000000, perc:120},
+      "FSZKT": {nev:"Fogolyszöktetés", ft:10000000, perc:120}
     };
  
-    // Lista kirajzolása alul
     const tabla = document.getElementById("adatTabla");
     for (const key in adat) {
       const row = document.createElement("tr");
@@ -188,12 +184,11 @@
         <td>${key}</td>
         <td>${adat[key].nev}</td>
         <td>${adat[key].ft.toLocaleString()} Ft</td>
-        <td>${adat[key].perc > 0 ? adat[key].perc+" nap/perc" : "-"}</td>
+        <td>${adat[key].perc > 0 ? adat[key].perc+" perc" : "-"}</td>
       `;
       tabla.appendChild(row);
     }
  
-    // Számítás több kódra
     function calculate() {
       const input = document.getElementById("codeInput").value;
       const resultDiv = document.getElementById("result");
@@ -218,21 +213,19 @@
         }
       });
  
-      const enyhites = slider.value / 100;
-      let ftMod = totalFt * (1 - enyhites);
-      let percMod = totalPerc * (1 - enyhites);
+      let ftMod = totalFt * (1 - FIX_ENYHITES);
+      let percMod = totalPerc * (1 - FIX_ENYHITES);
  
       if (ftMod > MAX_FT) ftMod = MAX_FT;
       if (percMod > MAX_PERC) percMod = MAX_PERC;
  
       resultDiv.innerHTML = `
         <b>Eredeti összesen:</b> ${totalFt.toLocaleString()} Ft, ${totalPerc} perc
-        <br><b>Módosítva (${slider.value}% enyhítéssel):</b> ${ftMod.toLocaleString()} Ft, ${percMod} perc
+        <br><b>Módosítva (30% enyhítéssel):</b> ${Math.round(ftMod).toLocaleString()} Ft, ${Math.round(percMod)} perc
         <hr>
         <b>Részletek:</b> ${details}
       `;
     }
   </script>
 </body>
- 
 </html>
